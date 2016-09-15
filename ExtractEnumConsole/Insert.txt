@@ -1,0 +1,1 @@
+﻿INSERT INTO `{ENUMNAME}` (value,name,description) Values({VALUE}, '{NAME}', '{DESCRIPTION}');

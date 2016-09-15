@@ -1,0 +1,8 @@
+﻿DROP TABLE IF EXISTS `{ENUMNAME}`;
+CREATE TABLE `{ENUMNAME}` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `Value` bigint(11) NOT NULL,
+  `Name` varchar(200) NOT NULL,
+  `Description` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

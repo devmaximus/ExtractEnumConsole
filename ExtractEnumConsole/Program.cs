@@ -13,11 +13,68 @@ namespace ExtractEnumConsole
 {
     class Program
     {
+        #region Methods
+
+        private static string EncodeMySqlString(string value)
+        {
+            return value.Replace(@"\", @"\\").Replace("'", @"\'");
+        }
+
+        private static string GetResourceString(string name)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var resourceName = $"ExtractEnumConsole.{name}.txt";
+
+            using (var stream = assembly.GetManifestResourceStream(resourceName))
+            using (var reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+
         static void Main(string[] args)
         {
             foreach (var path in args)
             {
                 ProcessPath(path);
+            }
+        }
+
+        private static void ProcessEnum(string enumName, StreamReader sr, Dictionary<string, List<EnumEntry>> dictionary)
+        {
+            Console.WriteLine(enumName);
+            var hashTable = dictionary[enumName];
+
+            var parseEnums = false;
+            while (!sr.EndOfStream)
+            {
+                var line = sr.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                if (Regex.IsMatch(line, @"^([\s|\t]+|)\{"))
+                {
+                    parseEnums = true;
+                    continue;
+                }
+
+                if (Regex.IsMatch(line, @"^([\s|\t]+|)\};"))
+                    break;
+
+                if (parseEnums)
+                {
+                    if (Regex.IsMatch(line, @"^([\s|\t]+|)\/\/"))
+                    {
+                        continue;
+                    }
+
+                    var t = Regex.Matches(line, @"^([\s|\t]+|)([A-Z0-9_]+)([\s|\t]+|)\=([\s|\t]+|)(0x[A-F0-9-]+|[0-9-]+)(,|)([\s|\t]+|)(//.*|)");
+                    if (t.Count > 0)
+                    {
+                        hashTable.Add(new EnumEntry(t));
+                    }
+                }
             }
         }
 
@@ -66,7 +123,7 @@ namespace ExtractEnumConsole
                         sw.WriteLine(
                             insert
                                 .Replace("{ENUMNAME}", item.Key)
-                                .Replace("{VALUE}", subitem.Hex + subitem.Value)
+                                .Replace("{VALUE}", subitem.Value)
                                 .Replace("{NAME}", subitem.Name)
                                 .Replace("{DESCRIPTION}", string.IsNullOrWhiteSpace(subitem.Description) ? string.Empty : EncodeMySqlString(subitem.Description)));
                     }
@@ -77,80 +134,32 @@ namespace ExtractEnumConsole
             Console.ReadLine();
         }
 
-        private static string EncodeMySqlString(string value)
-        {
-            return value.Replace(@"\", @"\\").Replace("'", @"\'");
-        }
-
-        private static string GetResourceString(string name)
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = $"ExtractEnumConsole.{name}.txt";
-
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            using (var reader = new StreamReader(stream))
-            {
-                return reader.ReadToEnd();
-            }
-        }
-
-        private static void ProcessEnum(string enumName, StreamReader sr, Dictionary<string, List<EnumEntry>> dictionary)
-        {
-            Console.WriteLine(enumName);
-            var hashTable = dictionary[enumName];
-
-            var parseEnums = false;
-            while (!sr.EndOfStream)
-            {
-                var line = sr.ReadLine();
-
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                if (Regex.IsMatch(line, @"^([\s|\t]+|)\{"))
-                {
-                    parseEnums = true;
-                    continue;
-                }
-
-                if (Regex.IsMatch(line, @"^([\s|\t]+|)\};"))
-                    break;
-
-                if (parseEnums)
-                {
-                    if (Regex.IsMatch(line, @"^([\s|\t]+|)\/\/"))
-                    {
-                        continue;
-                    }
-
-                    var t = Regex.Matches(line, @"^([\s|\t]+|)([A-Z0-9_]+)([\s|\t]+|)\=([\s|\t]+|)(0x[A-F0-9-]+|)([0-9-]+)(,|)([\s|\t]+|)(//|)(.*|)");
-                    if (t.Count > 0)
-                    {
-                        hashTable.Add(new EnumEntry(t));
-                    }
-                }
-            }
-        }
+        #endregion
 
         public class EnumEntry
         {
+            #region Constructors and Destructors
+
             public EnumEntry(MatchCollection mc)
             {
                 Name = mc[0].Groups[2].Value;
-                Hex = mc[0].Groups[5].Value;
-                Value = mc[0].Groups[6].Value;
-                Description = mc[0].Groups[10].Value.Trim();
+                Value = mc[0].Groups[5].Value;
+                Description = mc[0].Groups[8].Value.Trim();
 
-                Console.WriteLine($"{Name} {Hex} {Value} {Description}");
+                Console.WriteLine($"{Name} {Value} {Description}");
             }
+
+            #endregion
+
+            #region Public Properties
+
+            public string Description { get; }
 
             public string Name { get; }
 
-            public string Hex { get; }
-
             public string Value { get; }
 
-            public string Description { get; }
+            #endregion
         }
     }
 }

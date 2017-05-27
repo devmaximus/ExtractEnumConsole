@@ -40,6 +40,40 @@ namespace ExtractEnumConsole
             }
         }
 
+        private static void NormalizeEnumNames(Dictionary<string, List<EnumEntry>> dictionary)
+        {
+            foreach (var item in dictionary)
+            {
+                if (item.Value.Count == 0)
+                    continue;
+                var first = item.Value[0];
+                var f = 0;
+
+                for (var j = 1; j < first.Name.Length; j++)
+                {
+                    var prefix = first.Name.Substring(0, j);
+
+                    if (item.Value.All(x => j < x.Name.Length  && prefix == x.Name.Substring(0, j)))
+                    {
+                        f = j;
+                    }
+                }
+
+                if (f > 0)
+                {
+                    item.Value.ForEach(x =>
+                    {
+                        x.Name = x.Name.Substring(f, x.Name.Length - f);
+                        
+                        if (x.Description.StartsWith("//"))
+                        {
+                            x.Description = x.Description.Substring(2, x.Description.Length - 2).Trim();
+                        }
+                    });
+                }
+            }
+        }
+
         private static void ProcessEnum(string enumName, StreamReader sr, Dictionary<string, List<EnumEntry>> dictionary)
         {
             Console.WriteLine(enumName);
@@ -109,6 +143,8 @@ namespace ExtractEnumConsole
                 }
             }
 
+            NormalizeEnumNames(dictionary);
+
             var table = GetResourceString("Table");
             var insert = GetResourceString("Insert");
 
@@ -153,9 +189,9 @@ namespace ExtractEnumConsole
 
             #region Public Properties
 
-            public string Description { get; }
+            public string Description { get; set; }
 
-            public string Name { get; }
+            public string Name { get; set; }
 
             public string Value { get; }
 

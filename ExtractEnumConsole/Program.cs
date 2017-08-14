@@ -135,6 +135,11 @@ namespace ExtractEnumConsole
                         {
                             var enumName = Regex.Replace(line, @"^([\s|\t]+|)enum([\s|\t]+)([A-Za-z0-9_]+)([\s|\t]+|)(\/\/|)(.*)", "$3");
 
+                            if (dictionary.ContainsKey(enumName))
+                            {
+                                enumName = file.Directory.Name.Replace(" ", "_") + "_" + enumName;
+                            }
+
                             dictionary.Add(enumName, new List<EnumEntry>());
 
                             ProcessEnum(enumName, sr, dictionary);
